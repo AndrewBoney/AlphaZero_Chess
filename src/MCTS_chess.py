@@ -1,16 +1,18 @@
 #!/usr/bin/env python
+import numpy as np
+import encoder_decoder as ed
+import torch.multiprocessing as mp
+
 import pickle
 import os
 import collections
-import numpy as np
 import math
-import encoder_decoder as ed
-from chess_board import board as c_board
 import copy
 import torch
-import torch.multiprocessing as mp
-from alpha_net import ChessNet
 import datetime
+
+from alpha_net import ChessNet
+from chess_board import board
 
 class UCTNode():
     def __init__(self, game, move, parent=None):
@@ -105,8 +107,7 @@ class UCTNode():
                     board.player = self.game.player
                     board.move_piece((0,0),(0,3),None)
         return board
-            
-    
+
     def maybe_add_child(self, move):
         if move not in self.children:
             copy_board = copy.deepcopy(self.game) # make copy of board
@@ -124,7 +125,6 @@ class UCTNode():
             elif current.game.player == 0: # same as current.parent.game.player = 1
                 current.total_value += (-1*value_estimate)
             current = current.parent
-        
 
 class DummyNode(object):
     def __init__(self):
@@ -132,8 +132,7 @@ class DummyNode(object):
         self.child_total_value = collections.defaultdict(float)
         self.child_number_visits = collections.defaultdict(float)
 
-
-def UCT_search(game_state, num_reads,net):
+def UCT_search(game_state, num_reads, net):
     root = UCTNode(game_state, move=None, parent=DummyNode())
     for i in range(num_reads):
         leaf = root.select_leaf()
@@ -186,10 +185,9 @@ def load_pickle(filename):
         data = pickle.load(pkl_file)
     return data
 
-
 def MCTS_self_play(chessnet,num_games,cpu):
     for idxx in range(0,num_games):
-        current_board = c_board()
+        current_board = board()
         checkmate = False
         dataset = [] # to get state, policy, value for neural network training
         states = []
@@ -224,8 +222,6 @@ def MCTS_self_play(chessnet,num_games,cpu):
                 dataset_p.append([s,p,value])
         del dataset
         save_as_pickle("dataset_cpu%i_%i_%s" % (cpu,idxx, datetime.datetime.today().strftime("%Y-%m-%d")),dataset_p)
-
-
     
 if __name__=="__main__":
     
